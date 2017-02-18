@@ -48,7 +48,7 @@ library(ALA4R)
 ## ------------------------------------------------------------------------
 to_install <- c("plyr","jpeg","phytools","ape","vegan","mgcv","geosphere","maps","mapdata","maptools")
 to_install <- to_install[!sapply(to_install,requireNamespace,quietly=TRUE)]
-if(length(to_install)>0) install.packages(to_install)
+if(length(to_install)>0) install.packages(to_install,repos="http://cran.us.r-project.org")
 
 ## ------------------------------------------------------------------------
 library(plyr)
