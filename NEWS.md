@@ -1,3 +1,16 @@
+# ALA4R 1.6.0
+* added workaround for `occurrences(..., method="offline")` to cope with server-side bug (see https://github.com/AtlasOfLivingAustralia/biocache-service/issues/221)
+* package documentation via `pkgdown` (https://atlasoflivingaustralia.github.io/ALA4R/)
+* refreshed package vignette
+* change of package maintainer
+
+# ALA4R 1.5.10
+* bugfixes
+
+# ALA4R 1.5.6
+* added `biocache_version` parameter to server configuration, to support use of ALA4R with other server instances (e.g. other national installations using the ALA server infrastructure) 
+* minor bugfixes
+
 # ALA4R 1.5
 
 * updated code,examples and vignette for new ALA taxonomic backbone

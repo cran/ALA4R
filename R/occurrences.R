@@ -1,6 +1,6 @@
 #' Get occurrence data
 #' 
-#' Retrieve ALA occurrence data via the "occurrence download" web service. At least one of \code{taxon}, \code{wkt}, or \code{fq} must be supplied for a valid query. Note that there is a limit of 500000 records per request when using \code{method="indexed"}. Use the \code{method="offline"} for larger requests. For small requests, \code{method="indexed"} may be faster.
+#' Retrieve ALA occurrence data via the "occurrence download" web service. At least one of \code{taxon}, \code{wkt}, or \code{fq} must be supplied for a valid query. Note that there is a limit of 500000 records per request when using \code{method="indexed"}. Use the \code{method="offline"} for larger requests. For small requests, \code{method="indexed"} likely to be faster.
 #' 
 #' @references \itemize{
 #' \item Associated ALA web service for record counts: \url{http://api.ala.org.au/#ws3}
@@ -8,7 +8,13 @@
 #' \item Field definitions: \url{https://docs.google.com/spreadsheet/ccc?key=0AjNtzhUIIHeNdHhtcFVSM09qZ3c3N3ItUnBBc09TbHc}
 #' \item WKT reference: \url{http://www.geoapi.org/3.0/javadoc/org/opengis/referencing/doc-files/WKT.html}
 #' }
-#' @param taxon string: (optional) query of the form field:value (e.g. "genus:Macropus") or a free text search ("Alaba vibex")
+#' @param taxon string: (optional) query of the form field:value (e.g. "genus:Heleioporus") or a free text search (e.g. "macropodidae"). Note that
+#' a free-text search is equivalent to specifying the "text" field (i.e. \code{taxon="Alaba"} is equivalent to \code{taxon="text:Alaba"}. 
+#' The text field is populated with the taxon name along with a handful of other commonly-used fields, and so just specifying your target
+#' taxon (e.g. taxon="Alaba vibex") will probably work. 
+#' However, for reliable results it is recommended to use a specific field where possible (see \code{ala_fields("occurrence_indexed")}
+#' for valid fields). It is also good practice to quote the taxon name if it contains multiple words, for example
+#' \code{taxon="taxon_name:\"Alaba vibex\""}
 #' @param wkt string: (optional) a WKT (well-known text) string providing a spatial polygon within which to search, e.g. "POLYGON((140 -37,151 -37,151 -26,140.131 -26,140 -37))"
 #' @param fq string: (optional) character string or vector of strings, specifying filters to be applied to the original query. These are of the form "INDEXEDFIELD:VALUE" e.g. "kingdom:Fungi". 
 #' See \code{ala_fields("occurrence_indexed",as_is=TRUE)} for all the fields that are queryable. 
@@ -42,24 +48,26 @@
 #' x <- occurrences(taxon="data_resource_uid:dr356",download_reason_id=10,
 #'   fields=ala_fields("occurrence_stored",as_is=TRUE)$name) 
 #' ## download records, with specified fields
-#' x <- occurrences(taxon="macropus",fields=c("longitude","latitude","common_name",
-#'   "taxon_name","el807"),download_reason_id=10)
+#' x <- occurrences(taxon="genus:Heleioporus",fields=c("longitude","latitude",
+#'   "common_name","taxon_name","el807"),download_reason_id=10)
 #'  ## download records in polygon, with no quality assertion information
-#' x <- occurrences(taxon="macropus",
+#' x <- occurrences(taxon="genus:Heleioporus",
 #'   wkt="POLYGON((145 -37,150 -37,150 -30,145 -30,145 -37))",
 #'   download_reason_id=10,qa="none")
 #' 
-#' y <- occurrences(taxon="alaba vibex",fields=c("latitude","longitude","el874"),download_reason_id=10)
+#' y <- occurrences(taxon="taxon_name:\"Alaba vibex\"",fields=c("latitude","longitude","el874"),
+#'   download_reason_id=10)
 #' str(y)
-#' # equivalent direct webservice call:
-#' # http://biocache.ala.org.au/ws/occurrences/index/download?reasonTypeId=10&q=Alaba%20vibex&
-#' #    fields=latitude,longitude,el874&qa=none
+#' # equivalent direct webservice call [see this by setting ala_config(verbose=TRUE)]:
+#' # http://biocache.ala.org.au/ws/occurrences/index/download?q=taxon_name%3A%22Alaba%20vibex%22&
+#' # fields=latitude,longitude,el874&reasonTypeId=10&sourceTypeId=2001&esc=%5C&sep=%09&file=data
 #'
-#' occurrences(taxon="Eucalyptus gunnii",fields=c("latitude","longitude"),
+#' occurrences(taxon="taxon_name:\"Eucalyptus gunnii\"",fields=c("latitude","longitude"),
 #'   qa="none",fq="basis_of_record:LivingSpecimen",download_reason_id=10)
-#' # equivalent direct webservice call:
-#' # http://biocache.ala.org.au/ws/occurrences/index/download?reasonTypeId=10&q=Eucalyptus%20gunnii&
-#' #    fields=latitude,longitude&qa=none&fq=basis_of_record:LivingSpecimen
+#' # equivalent direct webservice call [see this by setting ala_config(verbose=TRUE)]:
+#' # http://biocache.ala.org.au/ws/occurrences/index/download?q=taxon_name%3A%22Eucalyptus%20gunnii%22&
+#' # fq=basis_of_record%3ALivingSpecimen&fields=latitude,longitude&qa=none&reasonTypeId=10&
+#' # sourceTypeId=2001&esc=%5C&sep=%09&file=data
 #' }
 #' @export occurrences
 
@@ -174,7 +182,7 @@ occurrences <- function(taxon,wkt,fq,fields,extra,qa,method="indexed",email,down
     this_query$esc <- "\\" ## force backslash-escaping of quotes rather than double-quote escaping
     this_query$sep <- "\t" ## tab-delimited
     this_query$file <- "data" ## to ensure that file is named "data.csv" within the zip file
-
+    ##this_query$dwcHeaders <- "true" ## possibly use this to be more consistent with field names
     if (method=="indexed")
         this_url <- build_url_from_parts(getOption("ALA4R_server_config")$base_url_biocache,c("occurrences","index","download"),query=this_query)
     else
@@ -185,16 +193,34 @@ occurrences <- function(taxon,wkt,fq,fields,extra,qa,method="indexed",email,down
         if ((ala_config()$caching %in% c("off","refresh")) || (! file.exists(thisfile))) {
             status <- cached_get(url=this_url,caching="off",type="json",verbose=verbose)
             if (!"statusUrl" %in% names(status)) stop("reply from server was missing statusUrl. ",getOption("ALA4R_server_config")$notify)
-            status <- cached_get(status$statusUrl,caching="off",type="json",verbose=verbose)
+            this_status_url <- status$statusUrl
+            status <- cached_get(this_status_url,caching="off",type="json",verbose=verbose)
             while (tolower(status$status) %in% c("inqueue","running")) {##!= "finished") {
-                status <- cached_get(status$statusUrl,caching="off",type="json",verbose=verbose)
+                status <- cached_get(this_status_url,caching="off",type="json",verbose=verbose)
                 Sys.sleep(2)
             }
-            if (status$status!="finished") {
-                stop("unexpected response from server. ",getOption("ALA4R_server_config")$notify,". Response was:\n",str(status))
+            ## May 2018: workaround for server-side bug
+            ## see https://github.com/AtlasOfLivingAustralia/biocache-service/issues/221#issuecomment-389740284
+            if (tolower(status$status) %in% c("invalidid")) {
+                tryCatch({
+                    ## pull out the uuid from the status URL
+                    this_uuid <- stringr::str_match(this_status_url, "status/([^/]+)/?$")[1, 2]
+                    ## change last "-" to "/"
+                    temp <- strsplit(this_uuid, "-")[[1]]
+                    temp <- paste0(paste(temp[-length(temp)], collapse="-"), "/", temp[length(temp)])
+                    url_to_try <- build_url_from_parts(getOption("ALA4R_server_config")$base_url_biocache_download, c(temp, "data.zip"))
+                    download_to_file(url_to_try, outfile=thisfile, binary_file=TRUE, verbose=verbose)
+                    status$status <- "finished" ## act as if it all worked!
+                }, error=function(e) {
+                    stop("Offline download failed. ", getOption("ALA4R_server_config")$notify)
+                })
             } else {
-                ## finally we have the URL to the data file itself
-                download_to_file(status$downloadUrl,outfile=thisfile,binary_file=TRUE,verbose=verbose)
+                if (status$status!="finished") {
+                    stop("unexpected response from server. ",getOption("ALA4R_server_config")$notify,". The server response was: ",status$status)
+                } else {
+                    ## finally we have the URL to the data file itself
+                    download_to_file(status$downloadUrl,outfile=thisfile,binary_file=TRUE,verbose=verbose)
+                }
             }
         } else {
             ## we are using the existing cached file
@@ -223,7 +249,7 @@ occurrences <- function(taxon,wkt,fq,fields,extra,qa,method="indexed",email,down
                 unzip(thisfile,files=c("data.csv"),junkpaths=TRUE,exdir=tempsubdir)
                 ## first check if file is empty
                 if (file.info(file.path(tempsubdir,"data.csv"))$size>0) {
-                    x <- data.table::fread(file.path(tempsubdir,"data.csv"),data.table=FALSE,stringsAsFactors=FALSE,header=TRUE,verbose=verbose,sep="\t")
+                    x <- data.table::fread(file.path(tempsubdir, "data.csv"), data.table=FALSE, stringsAsFactors=FALSE, header=TRUE, verbose=verbose, sep="\t", na.strings="NA", logical01=FALSE)
                     names(x) <- make.names(names(x))
                     if (!empty(x)) {
                         ## convert column data types

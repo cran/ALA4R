@@ -103,6 +103,7 @@ thischeck <- function() {
 }
 check_caching(thischeck)
 
+
 thischeck <- function() {
     test_that("occurrences works with records_count_only", {
         skip_on_cran()
