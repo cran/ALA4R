@@ -9,6 +9,7 @@ Status](https://travis-ci.org/AtlasOfLivingAustralia/ALA4R.svg?branch=master)](h
 [![codecov](https://codecov.io/gh/AtlasOfLivingAustralia/ALA4R/branch/master/graph/badge.svg)](https://codecov.io/gh/AtlasOfLivingAustralia/ALA4R)
 [![CRAN
 Status](http://www.r-pkg.org/badges/version/ALA4R)](http://www.r-pkg.org/pkg/ALA4R)
+[![CRAN Downloads](https://cranlogs.r-pkg.org/badges/grand-total/ALA4R)](https://CRAN.R-project.org/package=ALA4R)
 
 The Atlas of Living Australia (ALA) provides tools to enable users of
 biodiversity information to find, access, combine and visualise data on
@@ -40,15 +41,9 @@ install.packages("devtools")
 devtools::install_github("AtlasOfLivingAustralia/ALA4R")
 ```
 
-If you wish to use the `data.table` package for potentially faster
-loading of data matrices (optional), also do:
-
-``` r
-install.packages("data.table")
-```
-
-On Linux you will first need to ensure that `libcurl` and `v8` (version <= 3.15) are installed on
-your system — e.g. on Ubuntu/Debian, open a terminal and do:
+On Linux you will first need to ensure that `libcurl` and `v8` (version
+\<= 3.15) are installed on your system — e.g. on Ubuntu/Debian, open a
+terminal and do:
 
 ``` sh
 sudo apt-get install libcurl4-openssl-dev libv8-3.14-dev

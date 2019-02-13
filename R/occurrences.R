@@ -34,8 +34,8 @@
 #' @param verbose logical: show additional progress information? [default is set by ala_config()]
 #' @param record_count_only logical: if TRUE, return just the count of records that would be downloaded, but don't download them. Note that the record count is always re-retrieved from the ALA, regardless of the caching settings. If a cached copy of this query exists on the local machine, the actual data set size may therefore differ from this record count. \code{record_count_only=TRUE} can only be used with \code{method="indexed"}
 #' @param use_layer_names logical: if TRUE, layer names will be used as layer column names in the returned data frame (e.g. "radiationLowestPeriodBio22"). Otherwise, layer id value will be used for layer column names (e.g. "el871")
-#' @param use_data_table logical: if TRUE, attempt to read the data.csv file using the fread function from the data.table package. Requires data.table to be available. If this fails with an error or warning, or if use_data_table is FALSE, then read.table will be used (which may be slower)
-#' 
+#' @param use_data_table logical: if TRUE, attempt to read the data.csv file using the fread function from the data.table package. If this fails with an error or warning, or if use_data_table is FALSE, then read.table will be used (which may be slower)
+#'
 #' @return Data frame of occurrence results, with one row per occurrence record. The columns of the dataframe will depend on the requested fields
 #' @seealso \code{\link{ala_reasons}} for download reasons; \code{\link{ala_config}}
 #' @examples
@@ -117,13 +117,6 @@ occurrences <- function(taxon,wkt,fq,fields,extra,qa,method="indexed",email,down
         temp_query$pageSize <- 0
         temp_query$facet <- "off"
         this_url <- build_url_from_parts(getOption("ALA4R_server_config")$base_url_biocache,c("occurrences","search"),query=temp_query)
-        # ## don't need to check number of records if caching is on and we already have the file
-        # cache_file_exists=file.exists(ala_cache_filename(this_url))
-        # if ((ala_config()$caching %in% c("off","refresh")) | (!cache_file_exists & ala_config()$caching=="on")) {
-            ## check
-        #    num_records=cached_get(url=this_url,type="json")$totalRecords
-        #    cat(sprintf('occurrences: downloading dataset with %d records',num_records))
-        #}
         return(cached_get(url=this_url,type="json",caching="off",verbose=verbose)$totalRecords)
     }
     assert_that(is.flag(use_data_table))
@@ -224,7 +217,7 @@ occurrences <- function(taxon,wkt,fq,fields,extra,qa,method="indexed",email,down
             }
         } else {
             ## we are using the existing cached file
-            if (verbose) { cat(sprintf("  using cached file %s for %s\n",thisfile,this_url)) }
+            if (verbose) message(sprintf("Using cached file %s for %s",thisfile,this_url))
         }
     } else {
         thisfile <- cached_get(url=this_url,type="binary_filename",verbose=verbose)
@@ -235,15 +228,14 @@ occurrences <- function(taxon,wkt,fq,fields,extra,qa,method="indexed",email,down
         x <- NULL
         ## actually this isn't a sufficient check, since even with empty data.csv file inside, the outer zip file will be > 0 bytes. Check again below on the actual data.csv file
     } else {
-        ## if data.table is available, first try using this
         read_ok <- FALSE
-        if (use_data_table & requireNamespace("data.table",quietly=TRUE)) { ## if data.table package is available
+        if (use_data_table) {
             tryCatch({
                 ## first need to extract data.csv from the zip file
                 ## this may end up making fread() slower than direct read.table() ... needs testing
                 tempsubdir <- tempfile(pattern="dir")
                 if (verbose) {
-                    cat(sprintf(" unzipping downloaded occurrences data.csv file into %s\n",tempsubdir))
+                    message(sprintf("Unzipping downloaded occurrences data.csv file into %s",tempsubdir))
                 }
                 dir.create(tempsubdir)
                 unzip(thisfile,files=c("data.csv"),junkpaths=TRUE,exdir=tempsubdir)
@@ -255,7 +247,7 @@ occurrences <- function(taxon,wkt,fq,fields,extra,qa,method="indexed",email,down
                         ## convert column data types
                         ## ALA supplies *all* values as quoted text, even numeric, and they appear here as character type
                         ## we will convert whatever looks like numeric or logical to those classes
-                        x <- colwise(convert_dt)(x)
+                        for (cl in seq_len(ncol(x))) x[, cl] <- convert_dt(x[, cl])
                     }
                     read_ok <- TRUE
                 } else {
@@ -280,7 +272,7 @@ occurrences <- function(taxon,wkt,fq,fields,extra,qa,method="indexed",email,down
             if (!empty(x)) {
                 ## convert column data types
                 ## read.table handles quoted numerics but not quoted logicals
-                x <- colwise(convert_dt)(x,test_numeric=FALSE)
+                for (cl in seq_len(ncol(x))) x[, cl] <- convert_dt(x[, cl], test_numeric=FALSE)
             }
         }
 

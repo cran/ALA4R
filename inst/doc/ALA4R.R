@@ -9,9 +9,6 @@ options(width=120)
 #  install.packages("devtools")
 #  devtools::install_github("AtlasOfLivingAustralia/ALA4R")
 
-## ----eval=FALSE-------------------------------------------------------------------------------------------------------
-#  install.packages("data.table")
-
 ## ---------------------------------------------------------------------------------------------------------------------
 library(ALA4R)
 
@@ -54,43 +51,110 @@ library(dplyr)
 library(ape)
 library(phytools)
 
-## ---------------------------------------------------------------------------------------------------------------------
-sx <- search_fulltext("penguins")
-sx$data %>% dplyr::select(name, rank, commonName)
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  sx <- search_fulltext("penguins")
+#  sx$data %>% dplyr::select(name, rank, commonName)
 
-## ----message=FALSE----------------------------------------------------------------------------------------------------
-tx <- taxinfo_download("rk_family:SPHENISCIDAE", fields=c("guid", "rk_genus", "scientificName", "rank"))
+## ----echo=FALSE-------------------------------------------------------------------------------------------------------
+bieServerUp <- FALSE
 
-## keep only species and subspecies records
-tx <- tx %>% dplyr::filter(rank %in% c("species","subspecies"))
+tryCatch({
+  sx <- search_fulltext("penguins")
+  sx$data %>% dplyr::select(name, rank, commonName)
+  bieServerUp <- TRUE
+},warning = function(w) {print(w$message)}
+ ,error = function(e) {
+   print(e$message)})
 
-## ----results="hide", fig.width=9, fig.height=9------------------------------------------------------------------------
-## as.phylo requires the taxonomic columns to be factors
-tx <- tx %>% mutate_all(as.factor)
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  tx <- taxinfo_download("rk_family:SPHENISCIDAE", fields=c("guid", "rk_genus", "scientificName", "rank"))
+#  
+#  ## keep only species and subspecies records
+#  tx <- tx %>% dplyr::filter(rank %in% c("species","subspecies"))
 
-## create phylo object of Scientific.Name nested within Genus
-ax <- as.phylo(~genus/scientificName, data=tx)
-plotTree(ax, type="fan", fsize=0.7) ## plot it
+## ----message=FALSE, echo=FALSE----------------------------------------------------------------------------------------
+tx <- as.data.frame
+if (bieServerUp) {
+  tryCatch({
+    tx <- taxinfo_download("rk_family:SPHENISCIDAE", fields=c("guid", "rk_genus", "scientificName", "rank"))
+    tx <- tx %>% dplyr::filter(rank %in% c("species","subspecies"))
+  },warning = function(w) {print(w$message)}
+   ,error = function(e) {print(e$message)})
+}  
 
-## ---------------------------------------------------------------------------------------------------------------------
-s <- search_guids(tx$guid)
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  ## as.phylo requires the taxonomic columns to be factors
+#  tx <- tx %>% mutate_all(as.factor)
+#  
+#  ## create phylo object of Scientific.Name nested within Genus
+#  ax <- as.phylo(~genus/scientificName, data=tx)
+#  
+#  plotTree(ax, type="fan", fsize=0.7) ## plot it
 
-## ---------------------------------------------------------------------------------------------------------------------
-imfiles <- sapply(s$thumbnailUrl, function(z) {
-  ifelse(!is.na(z), ALA4R:::cached_get(z, type="binary_filename"), "")
-})
+## ----results="hide", fig.width=9, fig.height=9, echo=FALSE------------------------------------------------------------
+txExists <- !is.null(dim(tx))
+if(txExists)
+{
+  tx <- tx %>% mutate_all(as.factor)
+  ax <- as.phylo(~genus/scientificName, data=tx)
+  plotTree(ax, type="fan", fsize=0.7) ## plot it
+}
 
-## ----results="hide", fig.width=7.5, fig.height=7.5, dev.args=if (.Platform$OS.type=="unix") list(png=list(colortype="pseudo.cube")) else list()----
-## plot tree without labels
-plotTree(ax, type="fan", ftype="off")
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#    s <- search_guids(tx$guid)
 
-## get the tree plot object
-tr <- get("last_plot.phylo", envir = .PlotPhyloEnv)
+## ----echo=FALSE-------------------------------------------------------------------------------------------------------
+if(bieServerUp & txExists) {
+  tryCatch({
+    s <- search_guids(tx$guid)
+},warning = function(w) {print(w$message)}
+ ,error = function(e) {print(e$message)})
+}
 
-## add each image
-library(jpeg)
-for (k in which(nchar(imfiles)>0))
-        rasterImage(readJPEG(imfiles[k]), tr$xx[k]-1/10, tr$yy[k]-1/10, tr$xx[k]+1/10, tr$yy[k]+1/10)
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  imfiles <- sapply(s$thumbnailUrl, function(z) {
+#    ifelse(!is.na(z), ALA4R:::cached_get(z, type="binary_filename"), "")
+#  })
+
+## ----echo=FALSE-------------------------------------------------------------------------------------------------------
+if(txExists) {
+  tryCatch({
+  imfiles <- sapply(s$thumbnailUrl, function(z) {
+    ifelse(!is.na(z), ALA4R:::cached_get(z, type="binary_filename"), "")
+  })
+},warning = function(w) {print(w$message)}
+ ,error = function(e) {print(e$message)})
+}
+
+## ----eval = FALSE, results="hide", fig.width=7.5, fig.height=7.5, dev.args=if (.Platform$OS.type=="unix") list(png=list(colortype="pseudo.cube")) else list()----
+#  ## plot tree without labels
+#  plotTree(ax, type="fan", ftype="off")
+#  
+#  ## get the tree plot object
+#  tr <- get("last_plot.phylo", envir = .PlotPhyloEnv)
+#  
+#  ## add each image
+#  library(jpeg)
+#  for (k in which(nchar(imfiles)>0))
+#          rasterImage(readJPEG(imfiles[k]), tr$xx[k]-1/10, tr$yy[k]-1/10, tr$xx[k]+1/10, tr$yy[k]+1/10)
+
+## ----echo = FALSE, results="hide", fig.width=7.5, fig.height=7.5, dev.args=if (.Platform$OS.type=="unix") list(png=list(colortype="pseudo.cube")) else list()----
+
+if(txExists) {
+  tryCatch({
+    ## plot tree without labels
+    plotTree(ax, type="fan", ftype="off")
+    
+    ## get the tree plot object
+    tr <- get("last_plot.phylo", envir = .PlotPhyloEnv)
+    
+    ## add each image
+    library(jpeg)
+    for (k in which(nchar(imfiles)>0))
+            rasterImage(readJPEG(imfiles[k]), tr$xx[k]-1/10, tr$yy[k]-1/10, tr$xx[k]+1/10, tr$yy[k]+1/10)
+},warning = function(w) {print(w$message)}
+ ,error = function(e) {print(e$message)})
+}
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
 #  library(maptools)
@@ -137,15 +201,30 @@ temp <- apply(lonlat, 1, function(z) paste(z, collapse=" "))
 ## now build the WKT string
 wkt <- paste("POLYGON((", paste(temp, collapse=","), "))", sep="")
 
-## ---------------------------------------------------------------------------------------------------------------------
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  specieslist(wkt=wkt, fq="state_conservation:*") %>%
+#      dplyr::arrange(desc(occurrenceCount)) %>%
+#      dplyr::select(speciesName, commonName, occurrenceCount) %>%
+#      head(10)
+
+## ----echo=FALSE-------------------------------------------------------------------------------------------------------
+tryCatch({
 specieslist(wkt=wkt, fq="state_conservation:*") %>%
     dplyr::arrange(desc(occurrenceCount)) %>%
     dplyr::select(speciesName, commonName, occurrenceCount) %>%
     head(10)
+}, error = function(e) { print(e$message)})
 
-## ---------------------------------------------------------------------------------------------------------------------
-x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing")
-summary(x)
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing")
+#  summary(x)
+
+## ----echo=FALSE-------------------------------------------------------------------------------------------------------
+tryCatch({
+  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing")
+  summary(x)
+},warning = function(w) {print(w$message)}
+ ,error = function(e) { print(e$message)})
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
 #  occurrences_plot(x, qa="fatal")
