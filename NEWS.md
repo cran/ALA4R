@@ -1,3 +1,10 @@
+# ALA4R 1.7.0
+* remove dependency on RCurl 
+
+# ALA4R 1.6.3
+* changes to API urls (http to https)
+* handle new sites_by_species web service
+
 # ALA4R 1.6.2
 * updates to handle ALA API field changes
 * update vignette to be more robust to server outage

@@ -5,7 +5,7 @@
 
 [![Travis-CI Build
 Status](https://travis-ci.org/AtlasOfLivingAustralia/ALA4R.svg?branch=master)](https://travis-ci.org/AtlasOfLivingAustralia/ALA4R)
-[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/6dmcp1wc4wcr0rdb?svg=true)](https://ci.appveyor.com/project/raymondben/ala4r-kt6t8)
+[![Appveyor Build status](https://ci.appveyor.com/api/projects/status/g9pudc4l7053w4vn/branch/master?svg=true)](https://ci.appveyor.com/project/PeggyNewman/ala4r/branch/master)
 [![codecov](https://codecov.io/gh/AtlasOfLivingAustralia/ALA4R/branch/master/graph/badge.svg)](https://codecov.io/gh/AtlasOfLivingAustralia/ALA4R)
 [![CRAN
 Status](http://www.r-pkg.org/badges/version/ALA4R)](http://www.r-pkg.org/pkg/ALA4R)

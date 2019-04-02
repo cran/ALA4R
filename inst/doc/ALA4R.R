@@ -246,7 +246,7 @@ tryCatch({
 #  these_assertions <- names(x$data)[x_afcols]
 #  
 #  ## make a link to th web page for each occurrence
-#  popup_link <- paste0("<a href=\"http://biocache.ala.org.au/occurrences/", x$data$id, "\">Link to occurrence record</a>")
+#  popup_link <- paste0("<a href=\"https://biocache.ala.org.au/occurrences/", x$data$id, "\">Link to occurrence record</a>")
 #  
 #  ## colour palette
 #  pal <- c(sub("FF$", "", heat.colors(length(these_assertions))))
