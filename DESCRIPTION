@@ -1,11 +1,12 @@
 Package: ALA4R
 Type: Package
 Title: Atlas of Living Australia (ALA) Data and Resources in R
-Version: 1.7.0
+Version: 1.8.0
 Authors@R: c(person("Peggy", "Newman", email="peggy.newman@csiro.au", role=c("aut", "cre")),
              person("Ben", "Raymond", email="ben_ala@untan.gl", role="aut"),
              person("Jeremy", "VanDerWal", role="aut"),
              person("Lee", "Belbin", role="aut"),
+             person("Matilda", "Stevenson", role="aut"),
              person("Michael", "Sumner", role="ctb"),
              person("Tom", "August", role="ctb"),
              person("John", "Baumgartner", role="ctb"))
@@ -26,16 +27,17 @@ Maintainer: Peggy Newman <peggy.newman@csiro.au>
 LazyLoad: yes
 LazyData: yes
 VignetteBuilder: knitr
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
 Encoding: UTF-8
 NeedsCompilation: no
-Packaged: 2019-04-02 03:07:25 UTC; new330
+Packaged: 2020-04-03 21:35:09 UTC; new330
 Author: Peggy Newman [aut, cre],
   Ben Raymond [aut],
   Jeremy VanDerWal [aut],
   Lee Belbin [aut],
+  Matilda Stevenson [aut],
   Michael Sumner [ctb],
   Tom August [ctb],
   John Baumgartner [ctb]
 Repository: CRAN
-Date/Publication: 2019-04-02 05:20:03 UTC
+Date/Publication: 2020-04-04 04:10:03 UTC

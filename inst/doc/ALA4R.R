@@ -55,16 +55,17 @@ library(phytools)
 #  sx <- search_fulltext("penguins")
 #  sx$data %>% dplyr::select(name, rank, commonName)
 
-## ----echo=FALSE-------------------------------------------------------------------------------------------------------
-bieServerUp <- FALSE
-
+## ----include=FALSE----------------------------------------------------------------------------------------------------
 tryCatch({
   sx <- search_fulltext("penguins")
-  sx$data %>% dplyr::select(name, rank, commonName)
   bieServerUp <- TRUE
 },warning = function(w) {print(w$message)}
  ,error = function(e) {
    print(e$message)})
+
+if(bieServerUp) {
+  sx$data %>% dplyr::select(name, rank, commonName)
+}
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
 #  tx <- taxinfo_download("rk_family:SPHENISCIDAE", fields=c("guid", "rk_genus", "scientificName", "rank"))
@@ -80,7 +81,8 @@ if (bieServerUp) {
     tx <- tx %>% dplyr::filter(rank %in% c("species","subspecies"))
   },warning = function(w) {print(w$message)}
    ,error = function(e) {print(e$message)})
-}  
+}
+txExists <- !is.null(dim(tx))
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
 #  ## as.phylo requires the taxonomic columns to be factors
@@ -91,14 +93,13 @@ if (bieServerUp) {
 #  
 #  plotTree(ax, type="fan", fsize=0.7) ## plot it
 
-## ----results="hide", fig.width=9, fig.height=9, echo=FALSE------------------------------------------------------------
-txExists <- !is.null(dim(tx))
-if(txExists)
-{
-  tx <- tx %>% mutate_all(as.factor)
-  ax <- as.phylo(~genus/scientificName, data=tx)
-  plotTree(ax, type="fan", fsize=0.7) ## plot it
-}
+## ----eval=FALSE, results="hide", fig.width=9, fig.height=9, echo=FALSE------------------------------------------------
+#  if(txExists)
+#  {
+#    tx <- tx %>% mutate_all(as.factor)
+#    ax <- as.phylo(~genus/scientificName, data=tx)
+#    plotTree(ax, type="fan", fsize=0.7) ## plot it
+#  }
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
 #    s <- search_guids(tx$guid)
@@ -216,12 +217,12 @@ specieslist(wkt=wkt, fq="state_conservation:*") %>%
 }, error = function(e) { print(e$message)})
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
-#  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing")
+#  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="test@test.org")
 #  summary(x)
 
 ## ----echo=FALSE-------------------------------------------------------------------------------------------------------
 tryCatch({
-  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing")
+  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="test@test.org")
   summary(x)
 },warning = function(w) {print(w$message)}
  ,error = function(e) { print(e$message)})
@@ -253,7 +254,9 @@ tryCatch({
 #  
 #  ## map each data row to colour, depending on its assertions
 #  marker_colour <- rep("#00FF00", nrow(x$data))
-#  for (k in 1:length(these_assertions)) marker_colour[x$data[, x_afcols[k]]] <- pal[k]
+#  if (length(these_assertions)>0) {
+#    for (k in 1:length(these_assertions)) marker_colour[x$data[, x_afcols[k]]] <- pal[k]
+#  }
 #  
 #  ## blank map, with imagery background
 #  m <- addProviderTiles(leaflet(), "Esri.WorldImagery")
@@ -280,7 +283,8 @@ library(vegan)
 #  ##   this function for your own analyses; see `ala_reasons()`
 #  
 #  x <- occurrences(taxon="family:Fabaceae", wkt=wkt, qa="none",
-#                   download_reason_id="testing", extra=env_layers)
+#                   download_reason_id="testing", extra=env_layers,
+#                   email="test@test.org")
 
 ## ----include=FALSE----------------------------------------------------------------------------------------------------
 ## load data from a local copy so that vignette building doesn't require downloading a big chunk of data and slow sites-by-species processing
@@ -366,4 +370,50 @@ library(maps)
 library(mapdata)
 map("worldHires", "Australia", xlim=c(105, 155), ylim=c(-45, -10), col="gray90", fill=TRUE)
 with(xgridded, points(longitude, latitude, pch=21, col=thiscol[grp], bg=thiscol[grp], cex=0.75))
+
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  magpie_occs <- ALA4R::occurrences(taxon="taxon_name:\"Gymnorhina tibicen\"",
+#                              fq=c("multimedia:Image","license:\"CC0\""))
+
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  magpie_occs_top5 <- magpie_occs$data %>%
+#      dplyr::select(id,basisOfRecord,dataResourceName,state,licence,eventDate) %>%
+#      head(5)
+
+## ----echo=FALSE-------------------------------------------------------------------------------------------------------
+tryCatch({
+  magpie_occs <- ALA4R::occurrences(taxon="taxon_name:\"Gymnorhina tibicen\"",
+                            fq=c("multimedia:Image","license:\"CC0\""), 
+                            email = "test@ala-test.org", download_reason_id = "testing")
+  # retain 5
+  magpie_occs_top5 <- magpie_occs$data %>% dplyr::arrange(desc(eventDate)) %>% 
+    dplyr::mutate(occId=paste0(substring(id,0,10),"...")) %>%
+    dplyr::select(id,occId,basisOfRecord,dataResourceName,state,licence,eventDate) %>% 
+    head(5)
+  
+  # display
+  if (!is.null(dim(magpie_occs_top5))) { magpie_occs_top5 %>% 
+      dplyr::select(occId,basisOfRecord,dataResourceName,state,licence,eventDate)}   
+
+},warning = function(w) {print(w$message)}
+ ,error = function(e) { print(e$message)})
+
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>%
+#      dplyr::pull(id), download=FALSE)
+
+## ----echo=FALSE,warning=FALSE-----------------------------------------------------------------------------------------
+tryCatch({
+  magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>% dplyr::pull(id), download=FALSE)
+  
+  if (!is.null(dim(magpie_occ_images)) ) {
+    magpie_occ_images %>% dplyr::mutate(occurrenceID=paste0(substring(occurrenceID,0,10),"..."), imageID = paste0(substring(imageIdentifier,0,10),"...")) %>%
+      dplyr::select(occurrenceID, imageID, format, fileSize, width, height)
+  }
+},error = function(e) { print(e$message)})
+
+
+## ----eval=FALSE-------------------------------------------------------------------------------------------------------
+#  magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>%
+#      dplyr::pull(id), download=TRUE, download_path = "my/local/directory")
 

@@ -18,13 +18,13 @@ thischeck=function() {
         expect_equal(names(tx),c("guid","genus","scientificName","rank"))
 
         ## default fields
-        expect_true(setequal(names(taxinfo_download("rk_genus:Heleioporus")),c("guid","rank","scientificName","establishmentMeans","genus","family","order","class","phylum","kingdom","datasetName")))
+        expect_true(setequal(names(taxinfo_download("rk_genus:Heleioporus")),c("guid","rank","scientificName","scientificNameAuthorship","scientificNameAuthorship","taxonomicStatus","establishmentMeans","genus","family","order","class","phylum","kingdom","datasetName","parentGuid","acceptedConceptName","acceptedConceptID")))
     })
 }
 check_caching(thischeck)
 
 thischeck=function() {
-    test_that("taxinfo_download fields thingies work", {
+    test_that("taxinfo_download downloads all fields", {
         skip_on_cran()
         f <- ala_fields("general")
         t <- taxinfo_download("rk_family:Spheniscidae",fields="all")
