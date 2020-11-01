@@ -147,46 +147,22 @@ library(phytools)
 
 Let's say that we want to look at the taxonomic tree of penguins but we don't know what the correct scientific name is. Start by searching for it:
 
-```{r eval=FALSE}
+```{r}
 sx <- search_fulltext("penguins")
-sx$data %>% dplyr::select(name, rank, commonName)
+sx$data %>% dplyr::select(name, rank, commonName, family)
 ```
 
-```{r include=FALSE}
-tryCatch({
-  sx <- search_fulltext("penguins")
-  bieServerUp <- TRUE
-},warning = function(w) {print(w$message)}
- ,error = function(e) {
-   print(e$message)})
-
-if(bieServerUp) {
-  sx$data %>% dplyr::select(name, rank, commonName)
-}
-```
 We can see that penguins correspond to the family "SPHENISCIDAE". Now we can download the taxonomic data (note that the search is case-sensitive):
 
-```{r eval=FALSE}
+```{r}
 tx <- taxinfo_download("rk_family:SPHENISCIDAE", fields=c("guid", "rk_genus", "scientificName", "rank"))
   
 ## keep only species and subspecies records
 tx <- tx %>% dplyr::filter(rank %in% c("species","subspecies"))
 ```
 
-```{r message=FALSE, echo=FALSE}
-tx <- as.data.frame
-if (bieServerUp) {
-  tryCatch({
-    tx <- taxinfo_download("rk_family:SPHENISCIDAE", fields=c("guid", "rk_genus", "scientificName", "rank"))
-    tx <- tx %>% dplyr::filter(rank %in% c("species","subspecies"))
-  },warning = function(w) {print(w$message)}
-   ,error = function(e) {print(e$message)})
-}
-txExists <- !is.null(dim(tx))
-```
-
 We can make a taxonomic tree plot using the `phytools` package:
-```{r eval=FALSE}
+```{r}
 ## as.phylo requires the taxonomic columns to be factors
 tx <- tx %>% mutate_all(as.factor)
 
@@ -196,52 +172,24 @@ ax <- as.phylo(~genus/scientificName, data=tx)
 plotTree(ax, type="fan", fsize=0.7) ## plot it
 ```
 
-```{r eval=FALSE, results="hide", fig.width=9, fig.height=9, echo=FALSE}
-if(txExists)
-{
-  tx <- tx %>% mutate_all(as.factor)
-  ax <- as.phylo(~genus/scientificName, data=tx)
-  plotTree(ax, type="fan", fsize=0.7) ## plot it
-}
-```
 
 We can also plot the tree with images of the different penguin species. We can first extract a species profile for each species identifier (guid) in our results:
 
-```{r eval=FALSE}
+```{r}
   s <- search_guids(tx$guid)
-```
-
-```{r echo=FALSE}
-if(bieServerUp & txExists) {
-  tryCatch({
-    s <- search_guids(tx$guid)
-},warning = function(w) {print(w$message)}
- ,error = function(e) {print(e$message)})
-}
 ```
 
 For each of those species profiles, download the thumbnail image and store it in our data cache:
 
-```{r eval=FALSE}
+```{r}
 imfiles <- sapply(s$thumbnailUrl, function(z) {
   ifelse(!is.na(z), ALA4R:::cached_get(z, type="binary_filename"), "")
 })
 ```
 
-```{r echo=FALSE}
-if(txExists) {
-  tryCatch({
-  imfiles <- sapply(s$thumbnailUrl, function(z) {
-    ifelse(!is.na(z), ALA4R:::cached_get(z, type="binary_filename"), "")
-  })
-},warning = function(w) {print(w$message)}
- ,error = function(e) {print(e$message)})
-}
-```
-
 
 And finally, plot the tree:
-```{r eval = FALSE, results="hide", fig.width=7.5, fig.height=7.5, dev.args=if (.Platform$OS.type=="unix") list(png=list(colortype="pseudo.cube")) else list()}
+```{r results="hide", fig.width=7.5, fig.height=7.5, dev.args=if (.Platform$OS.type=="unix") list(png=list(colortype="pseudo.cube")) else list()}
 ## plot tree without labels
 plotTree(ax, type="fan", ftype="off")
 
@@ -254,31 +202,13 @@ for (k in which(nchar(imfiles)>0))
         rasterImage(readJPEG(imfiles[k]), tr$xx[k]-1/10, tr$yy[k]-1/10, tr$xx[k]+1/10, tr$yy[k]+1/10)
 ```
 
-```{r echo = FALSE, results="hide", fig.width=7.5, fig.height=7.5, dev.args=if (.Platform$OS.type=="unix") list(png=list(colortype="pseudo.cube")) else list()}
-
-if(txExists) {
-  tryCatch({
-    ## plot tree without labels
-    plotTree(ax, type="fan", ftype="off")
-    
-    ## get the tree plot object
-    tr <- get("last_plot.phylo", envir = .PlotPhyloEnv)
-    
-    ## add each image
-    library(jpeg)
-    for (k in which(nchar(imfiles)>0))
-            rasterImage(readJPEG(imfiles[k]), tr$xx[k]-1/10, tr$yy[k]-1/10, tr$xx[k]+1/10, tr$yy[k]+1/10)
-},warning = function(w) {print(w$message)}
- ,error = function(e) {print(e$message)})
-}
-```
 
 A number of species may have no image (mostly, these are extinct species) and others are images of eggs rather than animals, but you get the idea.
 
 
 ### Example 2: Area report: what listed species exist in a given area?
 
-First download an example shapefile of South Australian conservation reserve boundaries: see http://data.sa.gov.au/dataset/conservation-reserve-boundaries. We use the ALA4R's caching mechanism here, but you could equally download this file directly.
+First download an example shapefile of South Australian conservation reserve boundaries: see https://data.sa.gov.au/data/dataset/conservation-reserve-boundaries. We use the ALA4R's caching mechanism here, but you could equally download this file directly.
 
 ```{r eval=FALSE}
 library(maptools)
@@ -353,13 +283,13 @@ specieslist(wkt=wkt, fq="state_conservation:*") %>%
 Data quality assertions are a suite of fields that are the result of a set of tests peformed on ALA data. Download occurrence data for the golden bowerbird (you should adjust the `download_reason_id` to match your purposes if using this function for your own analyses; see `ala_reasons()`):
 
 ```{r eval=FALSE}
-x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="test@test.org")
+x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="ala4r@ala.org.au")
 summary(x)
 ```
 
 ```{r echo=FALSE}
 tryCatch({
-  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="test@test.org")
+  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="ala4r@ala.org.au")
   summary(x)
 },warning = function(w) {print(w$message)}
  ,error = function(e) { print(e$message)})
@@ -433,7 +363,7 @@ env_layers <- c("Precipitation - annual","Temperature - annual max mean")
 
 x <- occurrences(taxon="family:Fabaceae", wkt=wkt, qa="none",
                  download_reason_id="testing", extra=env_layers,
-                 email="test@test.org")
+                 email="ala4r@ala.org.au")
 ```
 
 Convert this to a sites-by-species data.frame:
@@ -557,11 +487,11 @@ magpie_occs_top5 <- magpie_occs$data %>%
 ```
 
 
-```{r echo=FALSE}
+```{r eval=FALSE, echo=FALSE}
 tryCatch({
   magpie_occs <- ALA4R::occurrences(taxon="taxon_name:\"Gymnorhina tibicen\"",
                             fq=c("multimedia:Image","license:\"CC0\""), 
-                            email = "test@ala-test.org", download_reason_id = "testing")
+                            email = "ala4r@ala.org.au", download_reason_id = "testing")
   # retain 5
   magpie_occs_top5 <- magpie_occs$data %>% dplyr::arrange(desc(eventDate)) %>% 
     dplyr::mutate(occId=paste0(substring(id,0,10),"...")) %>%
@@ -583,11 +513,11 @@ magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>%
     dplyr::pull(id), download=FALSE)
 ```
 
-```{r echo=FALSE,warning=FALSE}
+```{r echo=FALSE,warning=FALSE, eval=FALSE}
 tryCatch({
   magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>% dplyr::pull(id), download=FALSE)
   
-  if (!is.null(dim(magpie_occ_images)) ) {
+  if (!is.null(dim(magpie_occ_images))) {
     magpie_occ_images %>% dplyr::mutate(occurrenceID=paste0(substring(occurrenceID,0,10),"..."), imageID = paste0(substring(imageIdentifier,0,10),"...")) %>%
       dplyr::select(occurrenceID, imageID, format, fileSize, width, height)
   }
@@ -601,4 +531,3 @@ Set the download flag in the occurrence_images() function and optionally specify
 magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>% 
     dplyr::pull(id), download=TRUE, download_path = "my/local/directory")
 ```
-

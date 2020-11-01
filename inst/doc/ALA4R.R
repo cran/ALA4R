@@ -51,111 +51,44 @@ library(dplyr)
 library(ape)
 library(phytools)
 
-## ----eval=FALSE-------------------------------------------------------------------------------------------------------
-#  sx <- search_fulltext("penguins")
-#  sx$data %>% dplyr::select(name, rank, commonName)
+## ---------------------------------------------------------------------------------------------------------------------
+sx <- search_fulltext("penguins")
+sx$data %>% dplyr::select(name, rank, commonName, family)
 
-## ----include=FALSE----------------------------------------------------------------------------------------------------
-tryCatch({
-  sx <- search_fulltext("penguins")
-  bieServerUp <- TRUE
-},warning = function(w) {print(w$message)}
- ,error = function(e) {
-   print(e$message)})
+## ---------------------------------------------------------------------------------------------------------------------
+tx <- taxinfo_download("rk_family:SPHENISCIDAE", fields=c("guid", "rk_genus", "scientificName", "rank"))
+  
+## keep only species and subspecies records
+tx <- tx %>% dplyr::filter(rank %in% c("species","subspecies"))
 
-if(bieServerUp) {
-  sx$data %>% dplyr::select(name, rank, commonName)
-}
+## ---------------------------------------------------------------------------------------------------------------------
+## as.phylo requires the taxonomic columns to be factors
+tx <- tx %>% mutate_all(as.factor)
 
-## ----eval=FALSE-------------------------------------------------------------------------------------------------------
-#  tx <- taxinfo_download("rk_family:SPHENISCIDAE", fields=c("guid", "rk_genus", "scientificName", "rank"))
-#  
-#  ## keep only species and subspecies records
-#  tx <- tx %>% dplyr::filter(rank %in% c("species","subspecies"))
+## create phylo object of Scientific.Name nested within Genus
+ax <- as.phylo(~genus/scientificName, data=tx)
 
-## ----message=FALSE, echo=FALSE----------------------------------------------------------------------------------------
-tx <- as.data.frame
-if (bieServerUp) {
-  tryCatch({
-    tx <- taxinfo_download("rk_family:SPHENISCIDAE", fields=c("guid", "rk_genus", "scientificName", "rank"))
-    tx <- tx %>% dplyr::filter(rank %in% c("species","subspecies"))
-  },warning = function(w) {print(w$message)}
-   ,error = function(e) {print(e$message)})
-}
-txExists <- !is.null(dim(tx))
+plotTree(ax, type="fan", fsize=0.7) ## plot it
 
-## ----eval=FALSE-------------------------------------------------------------------------------------------------------
-#  ## as.phylo requires the taxonomic columns to be factors
-#  tx <- tx %>% mutate_all(as.factor)
-#  
-#  ## create phylo object of Scientific.Name nested within Genus
-#  ax <- as.phylo(~genus/scientificName, data=tx)
-#  
-#  plotTree(ax, type="fan", fsize=0.7) ## plot it
+## ---------------------------------------------------------------------------------------------------------------------
+  s <- search_guids(tx$guid)
 
-## ----eval=FALSE, results="hide", fig.width=9, fig.height=9, echo=FALSE------------------------------------------------
-#  if(txExists)
-#  {
-#    tx <- tx %>% mutate_all(as.factor)
-#    ax <- as.phylo(~genus/scientificName, data=tx)
-#    plotTree(ax, type="fan", fsize=0.7) ## plot it
-#  }
+## ---------------------------------------------------------------------------------------------------------------------
+imfiles <- sapply(s$thumbnailUrl, function(z) {
+  ifelse(!is.na(z), ALA4R:::cached_get(z, type="binary_filename"), "")
+})
 
-## ----eval=FALSE-------------------------------------------------------------------------------------------------------
-#    s <- search_guids(tx$guid)
+## ----results="hide", fig.width=7.5, fig.height=7.5, dev.args=if (.Platform$OS.type=="unix") list(png=list(colortype="pseudo.cube")) else list()----
+## plot tree without labels
+plotTree(ax, type="fan", ftype="off")
 
-## ----echo=FALSE-------------------------------------------------------------------------------------------------------
-if(bieServerUp & txExists) {
-  tryCatch({
-    s <- search_guids(tx$guid)
-},warning = function(w) {print(w$message)}
- ,error = function(e) {print(e$message)})
-}
+## get the tree plot object
+tr <- get("last_plot.phylo", envir = .PlotPhyloEnv)
 
-## ----eval=FALSE-------------------------------------------------------------------------------------------------------
-#  imfiles <- sapply(s$thumbnailUrl, function(z) {
-#    ifelse(!is.na(z), ALA4R:::cached_get(z, type="binary_filename"), "")
-#  })
-
-## ----echo=FALSE-------------------------------------------------------------------------------------------------------
-if(txExists) {
-  tryCatch({
-  imfiles <- sapply(s$thumbnailUrl, function(z) {
-    ifelse(!is.na(z), ALA4R:::cached_get(z, type="binary_filename"), "")
-  })
-},warning = function(w) {print(w$message)}
- ,error = function(e) {print(e$message)})
-}
-
-## ----eval = FALSE, results="hide", fig.width=7.5, fig.height=7.5, dev.args=if (.Platform$OS.type=="unix") list(png=list(colortype="pseudo.cube")) else list()----
-#  ## plot tree without labels
-#  plotTree(ax, type="fan", ftype="off")
-#  
-#  ## get the tree plot object
-#  tr <- get("last_plot.phylo", envir = .PlotPhyloEnv)
-#  
-#  ## add each image
-#  library(jpeg)
-#  for (k in which(nchar(imfiles)>0))
-#          rasterImage(readJPEG(imfiles[k]), tr$xx[k]-1/10, tr$yy[k]-1/10, tr$xx[k]+1/10, tr$yy[k]+1/10)
-
-## ----echo = FALSE, results="hide", fig.width=7.5, fig.height=7.5, dev.args=if (.Platform$OS.type=="unix") list(png=list(colortype="pseudo.cube")) else list()----
-
-if(txExists) {
-  tryCatch({
-    ## plot tree without labels
-    plotTree(ax, type="fan", ftype="off")
-    
-    ## get the tree plot object
-    tr <- get("last_plot.phylo", envir = .PlotPhyloEnv)
-    
-    ## add each image
-    library(jpeg)
-    for (k in which(nchar(imfiles)>0))
-            rasterImage(readJPEG(imfiles[k]), tr$xx[k]-1/10, tr$yy[k]-1/10, tr$xx[k]+1/10, tr$yy[k]+1/10)
-},warning = function(w) {print(w$message)}
- ,error = function(e) {print(e$message)})
-}
+## add each image
+library(jpeg)
+for (k in which(nchar(imfiles)>0))
+        rasterImage(readJPEG(imfiles[k]), tr$xx[k]-1/10, tr$yy[k]-1/10, tr$xx[k]+1/10, tr$yy[k]+1/10)
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
 #  library(maptools)
@@ -217,12 +150,12 @@ specieslist(wkt=wkt, fq="state_conservation:*") %>%
 }, error = function(e) { print(e$message)})
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
-#  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="test@test.org")
+#  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="ala4r@ala.org.au")
 #  summary(x)
 
 ## ----echo=FALSE-------------------------------------------------------------------------------------------------------
 tryCatch({
-  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="test@test.org")
+  x <- occurrences(taxon="taxon_name:\"Amblyornis newtonianus\"", download_reason_id="testing", email="ala4r@ala.org.au")
   summary(x)
 },warning = function(w) {print(w$message)}
  ,error = function(e) { print(e$message)})
@@ -284,7 +217,7 @@ library(vegan)
 #  
 #  x <- occurrences(taxon="family:Fabaceae", wkt=wkt, qa="none",
 #                   download_reason_id="testing", extra=env_layers,
-#                   email="test@test.org")
+#                   email="ala4r@ala.org.au")
 
 ## ----include=FALSE----------------------------------------------------------------------------------------------------
 ## load data from a local copy so that vignette building doesn't require downloading a big chunk of data and slow sites-by-species processing
@@ -380,38 +313,38 @@ with(xgridded, points(longitude, latitude, pch=21, col=thiscol[grp], bg=thiscol[
 #      dplyr::select(id,basisOfRecord,dataResourceName,state,licence,eventDate) %>%
 #      head(5)
 
-## ----echo=FALSE-------------------------------------------------------------------------------------------------------
-tryCatch({
-  magpie_occs <- ALA4R::occurrences(taxon="taxon_name:\"Gymnorhina tibicen\"",
-                            fq=c("multimedia:Image","license:\"CC0\""), 
-                            email = "test@ala-test.org", download_reason_id = "testing")
-  # retain 5
-  magpie_occs_top5 <- magpie_occs$data %>% dplyr::arrange(desc(eventDate)) %>% 
-    dplyr::mutate(occId=paste0(substring(id,0,10),"...")) %>%
-    dplyr::select(id,occId,basisOfRecord,dataResourceName,state,licence,eventDate) %>% 
-    head(5)
-  
-  # display
-  if (!is.null(dim(magpie_occs_top5))) { magpie_occs_top5 %>% 
-      dplyr::select(occId,basisOfRecord,dataResourceName,state,licence,eventDate)}   
-
-},warning = function(w) {print(w$message)}
- ,error = function(e) { print(e$message)})
+## ----eval=FALSE, echo=FALSE-------------------------------------------------------------------------------------------
+#  tryCatch({
+#    magpie_occs <- ALA4R::occurrences(taxon="taxon_name:\"Gymnorhina tibicen\"",
+#                              fq=c("multimedia:Image","license:\"CC0\""),
+#                              email = "ala4r@ala.org.au", download_reason_id = "testing")
+#    # retain 5
+#    magpie_occs_top5 <- magpie_occs$data %>% dplyr::arrange(desc(eventDate)) %>%
+#      dplyr::mutate(occId=paste0(substring(id,0,10),"...")) %>%
+#      dplyr::select(id,occId,basisOfRecord,dataResourceName,state,licence,eventDate) %>%
+#      head(5)
+#  
+#    # display
+#    if (!is.null(dim(magpie_occs_top5))) { magpie_occs_top5 %>%
+#        dplyr::select(occId,basisOfRecord,dataResourceName,state,licence,eventDate)}
+#  
+#  },warning = function(w) {print(w$message)}
+#   ,error = function(e) { print(e$message)})
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
 #  magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>%
 #      dplyr::pull(id), download=FALSE)
 
-## ----echo=FALSE,warning=FALSE-----------------------------------------------------------------------------------------
-tryCatch({
-  magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>% dplyr::pull(id), download=FALSE)
-  
-  if (!is.null(dim(magpie_occ_images)) ) {
-    magpie_occ_images %>% dplyr::mutate(occurrenceID=paste0(substring(occurrenceID,0,10),"..."), imageID = paste0(substring(imageIdentifier,0,10),"...")) %>%
-      dplyr::select(occurrenceID, imageID, format, fileSize, width, height)
-  }
-},error = function(e) { print(e$message)})
-
+## ----echo=FALSE,warning=FALSE, eval=FALSE-----------------------------------------------------------------------------
+#  tryCatch({
+#    magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>% dplyr::pull(id), download=FALSE)
+#  
+#    if (!is.null(dim(magpie_occ_images))) {
+#      magpie_occ_images %>% dplyr::mutate(occurrenceID=paste0(substring(occurrenceID,0,10),"..."), imageID = paste0(substring(imageIdentifier,0,10),"...")) %>%
+#        dplyr::select(occurrenceID, imageID, format, fileSize, width, height)
+#    }
+#  },error = function(e) { print(e$message)})
+#  
 
 ## ----eval=FALSE-------------------------------------------------------------------------------------------------------
 #  magpie_occ_images <- ALA4R::occurrence_images(magpie_occs_top5 %>%
