@@ -1,3 +1,10 @@
+# ALA4R 1.9.1
+* `ALA4R` is deprecated and will be removed from CRAN at the end of 2021.
+The package to replace `ALA4R`, `galah`, is now [available on CRAN](https://CRAN.R-project.org/package=galah).
+ For an introduction to `galah`, visit the
+[GitHub page](https://github.com/AtlasOfLivingAustralia/galah).
+* Minor fixes to functions in response to ALA core infrastructure upgrade
+
 # ALA4R 1.9.0
 * Add ability to generate a DOI for data downloads in `occurrences()` with `generate_doi` parameter
 * Add `email_notify` parameter to `occurrences()`, set to `FALSE` by default

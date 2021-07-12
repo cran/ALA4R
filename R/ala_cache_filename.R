@@ -1,4 +1,4 @@
-#' Returns the name of the cache file associated with a given URL.
+#' Returns the name of the cache file associated with the given URL.
 #' Note that this file may not actually exist, this function just provides
 #' the mapping from URL to filename
 #'
@@ -15,14 +15,17 @@
 #' @export ala_cache_filename
 ala_cache_filename <- function(url) {
     assert_that(is.string(url))
+    ## returns the cache filename associated with the given url
+    ## note that this file may not actually exist, this function just provides
+    ## the mapping from URL to filename
 
-    ## make sure that URL query params are sorted, so that the same URL with
+    ## make sure that URL query parms are sorted, so that the same URL with
     ## different query ordering hits the same cache file
     this_url <- parse_url(url) ## decompose URL into components
     if (! is.null(this_url$query)) {
         ## sort query terms by name
         this_url$query <- this_url$query[order(names(this_url$query))]
-        ## may also wish to sort items within some query params, e.g. fl
+        ## may also wish to sort items within some query parms, e.g. fl
         ## is a comma-separated list of fields
         if (! is.null(this_url$query$fl)) {
             this_url$query$fl <-

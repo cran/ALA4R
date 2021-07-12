@@ -13,6 +13,13 @@ Status](https://www.r-pkg.org/badges/version/ALA4R)](https://www.r-pkg.org/pkg/A
 [![CRAN
 Downloads](https://cranlogs.r-pkg.org/badges/grand-total/ALA4R)](https://cran.r-project.org/package=ALA4R)
 
+*`ALA4R` is deprecated and will be removed from CRAN at the end of 2021.
+The package to replace ALA4R, `galah`, is now [available on
+CRAN](https://CRAN.R-project.org/package=galah). `galah` provides an
+improved interface to ALA data, while providing the same core
+functionality as ALA4R. For an introduction to `galah`, visit the
+[GitHub page](https://github.com/AtlasOfLivingAustralia/galah).*
+
 The Atlas of Living Australia (ALA) provides tools to enable users of
 biodiversity information to find, access, combine and visualise data on
 Australian plants and animals; these have been made available from
@@ -21,16 +28,6 @@ directly used within R.
 
 ALA4R enables the R community to directly access data and resources
 hosted by the ALA.
-
-**NOTE:** The next release of ALA4R will be version 2.0.0. This will be
-a major update to simplify the process of downloading data, make
-behaviour across functions consistent, and remove redundant
-functionality.  
-In the coming weeks, you will be able to test out the new functionality
-in the [dev
-branch](https://github.com/AtlasOfLivingAustralia/ALA4R/tree/dev). If
-you have any questions or suggestions, please [contact
-us](mailto:support@ala.org.au).
 
 The use-examples presented at the [2014 ALA Science
 Symposium](https://www.ala.org.au/blogs-news/2014-atlas-of-living-australia-science-symposium/)
@@ -62,7 +59,7 @@ devtools::install_github("AtlasOfLivingAustralia/ALA4R")
 ```
 
 On Linux you will first need to ensure that `libcurl` and `v8` (version
-\<= 3.15) are installed on your system — e.g. on Ubuntu/Debian, open a
+&lt;= 3.15) are installed on your system — e.g. on Ubuntu/Debian, open a
 terminal and do:
 
 ``` sh
